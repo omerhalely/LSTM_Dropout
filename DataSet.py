@@ -29,12 +29,15 @@ class DataSet(Dataset):
 
     def __getitem__(self, idx):
         output = []
+        current_line = 0
         with open(self.data_path, 'r') as file:
-            line = file.readline()
-            line = line.split()
-            for word in line:
-                output.append(self.word2idx[word])
-            output.append(self.word2idx['<eos>'])
+            for line in file:
+                if idx == current_line:
+                    line = line.split()
+                    for word in line:
+                        output.append(self.word2idx[word])
+                    output.append(self.word2idx['<eos>'])
+                current_line += 1
         output = torch.unsqueeze(torch.Tensor(output), dim=1)
         return output
 
@@ -47,4 +50,3 @@ if __name__ == "__main__":
     sample = dataset[0]
     print(f"Sample: {sample}")
     print(f"Sample Shape: {sample.shape}")
-

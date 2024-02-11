@@ -12,6 +12,7 @@ class LSTM_Model(nn.Module):
         self.encoder = nn.Embedding(num_tokens, num_embeddings)
         self.lstm = nn.LSTM(input_size=num_embeddings, hidden_size=hidden_size, num_layers=num_layers, dropout=dropout)
         self.decoder = nn.Linear(hidden_size, num_tokens)
+        self.init_model()
 
     def forward(self, x, hidden):
         x = self.drop(self.encoder(x))
@@ -25,6 +26,13 @@ class LSTM_Model(nn.Module):
         h = torch.zeros(self.num_layers, batch_size, self.hidden_size)
         c = torch.zeros(self.num_layers, batch_size, self.hidden_size)
         return h, c
+
+    def init_model(self):
+        for name, param in self.lstm.named_parameters():
+            if "weight" in name:
+                nn.init.uniform_(param.data, a=-0.1, b=0.1)
+            elif "bias" in name:
+                nn.init.constant_(param.data, 0.0)
 
 
 class GRU_Model(nn.Module):

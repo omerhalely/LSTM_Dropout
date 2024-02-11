@@ -9,8 +9,7 @@ class LSTM_Model(nn.Module):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.dropout = dropout
-        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True,
-                            dropout=dropout)
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, dropout=dropout)
 
     def forward(self, x, hidden):
         output, hidden = self.lstm(x, hidden)

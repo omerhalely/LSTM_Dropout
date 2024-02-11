@@ -1,52 +1,76 @@
 import os
 import torch
 from torch.utils.data import Dataset
+from torch.autograd import Variable
 
 
-class DataSet(Dataset):
-    def __init__(self, path):
-        super().__init__()
-        self.data_path = os.path.join(os.getcwd(), path)
-        self.word2idx = {}  # word: index
-        self.idx2word = []  # position(index): word
-        self.tokenize()
+class Dictionary(object):
+    """Build word2idx and idx2word from Corpus(train/val/test)"""
+    def __init__(self):
+        self.word2idx = {} # word: index
+        self.idx2word = [] # position(index): word
 
-    def tokenize(self):
-        with open(self.data_path, 'r') as f:
+    def add_word(self, word):
+        """Create/Update word2idx and idx2word"""
+        if word not in self.word2idx:
+            self.idx2word.append(word)
+            self.word2idx[word] = len(self.idx2word) - 1
+        return self.word2idx[word]
+
+    def __len__(self):
+        return len(self.idx2word)
+
+
+class DataLoader(object):
+    """Corpus Tokenizer"""
+    def __init__(self, data_path, batch_size):
+        self.batch_size = batch_size
+        self.dictionary = Dictionary()
+        self.train = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.train.txt')))
+        self.valid = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.valid.txt')))
+        self.test = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.test.txt')))
+
+    def tokenize(self, path):
+        """Tokenizes a text file."""
+        assert os.path.exists(path)
+        # Add words to the dictionary
+        with open(path, 'r') as f:
             tokens = 0
             for line in f:
+                # line to list of token + eos
                 words = line.split() + ['<eos>']
                 tokens += len(words)
                 for word in words:
-                    if word not in self.word2idx:
-                        self.idx2word.append(word)
-                        self.word2idx[word] = len(self.idx2word) - 1
+                    self.dictionary.add_word(word)
 
-    def __len__(self):
-        with open(self.data_path, 'r') as file:
-            line_count = sum(1 for line in file)
-        return line_count
+        # Tokenize file content
+        with open(path, 'r') as f:
+            ids = torch.LongTensor(tokens)
+            token = 0
+            for line in f:
+                words = line.split() + ['<eos>']
+                for word in words:
+                    ids[token] = self.dictionary.word2idx[word]
+                    token += 1
 
-    def __getitem__(self, idx):
-        output = []
-        current_line = 0
-        with open(self.data_path, 'r') as file:
-            for line in file:
-                if idx == current_line:
-                    line = line.split()
-                    for word in line:
-                        output.append(self.word2idx[word])
-                    output.append(self.word2idx['<eos>'])
-                current_line += 1
-        output = torch.unsqueeze(torch.Tensor(output), dim=1)
-        return output
+        return ids
+
+    def batchify(self, data):
+        number_of_batches = data.size(0) // self.batch_size
+        data = data.narrow(0, 0, number_of_batches * self.batch_size)
+        data = data.view(self.batch_size, -1).t().contiguous()
+        return data
+
+    def get_batch(self, source, i, evaluation=False):
+        seq_len = min(35, len(source) - 1 - i)
+        data = Variable(source[i:i + seq_len], volatile=evaluation)
+        target = Variable(source[i + 1:i + 1 + seq_len].view(-1))
+        return data, target
 
 
 if __name__ == "__main__":
-    data_path = "./data/ptb.train.txt"
-    dataset = DataSet(data_path)
-    print("Loaded Data!")
-    print(f"Dataset Length: {len(dataset)}")
-    sample = dataset[0]
-    print(f"Sample: {sample}")
-    print(f"Sample Shape: {sample.shape}")
+    data_path = "./data"
+    batch_size = 20
+    dataset = DataLoader(data_path=data_path,
+                         batch_size=batch_size)
+

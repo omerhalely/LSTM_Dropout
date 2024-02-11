@@ -23,8 +23,9 @@ class Dictionary(object):
 
 class DataLoader(object):
     """Corpus Tokenizer"""
-    def __init__(self, data_path, batch_size):
+    def __init__(self, data_path, batch_size, sequence_length):
         self.batch_size = batch_size
+        self.sequence_length = sequence_length
         self.dictionary = Dictionary()
         self.train = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.train.txt')))
         self.valid = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.valid.txt')))
@@ -62,7 +63,7 @@ class DataLoader(object):
         return data
 
     def get_batch(self, source, i, evaluation=False):
-        seq_len = min(35, len(source) - 1 - i)
+        seq_len = min(self.sequence_length, len(source) - 1 - i)
         data = Variable(source[i:i + seq_len], volatile=evaluation)
         target = Variable(source[i + 1:i + 1 + seq_len].view(-1))
         return data, target

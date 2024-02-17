@@ -204,6 +204,9 @@ if __name__ == "__main__":
     train_batch_size = 20
     eval_batch_size = 10
     lr = 20
+    model_name = "LSTM_Dropout_0"
+    data_path = "./data"
+
     lstm_model = LSTM_Model(hidden_size=hidden_size,
                             num_layers=num_layers,
                             dropout=dropout,
@@ -214,8 +217,6 @@ if __name__ == "__main__":
     #                       dropout=dropout,
     #                       num_tokens=num_tokens,
     #                       num_embeddings=num_embeddings)
-    model_name = "LSTM_Dropout_0"
-    data_path = "./data"
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 

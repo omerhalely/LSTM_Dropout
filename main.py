@@ -20,7 +20,14 @@ parser.add_argument(
     "--model-name",
     type=str,
     help="Name of the model in which the model will be saved.",
-    default="LSTM_Dropout_02"
+    default="LSTM_Dropout"
+)
+
+parser.add_argument(
+    "--data",
+    type=str,
+    help="Path to the dataset folder.",
+    default="./data"
 )
 
 parser.add_argument(
@@ -45,10 +52,10 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--test",
+    "--test-mode",
     type=bool,
     help="If true, loads the model according to the given flags of --model-name, --model and tests the model. ",
-    default=True
+    default=False
 )
 
 
@@ -67,8 +74,8 @@ if __name__ == "__main__":
     eval_batch_size = 10
     lr = args.lr
     model_name = args.model_name
-    data_path = "./data"
-    test_mode = args.test
+    data_path = args.data
+    test_mode = args.test_mode
 
     print(f"Building {args.model} Model...")
     model = LSTM_Model(hidden_size=hidden_size,
@@ -82,6 +89,8 @@ if __name__ == "__main__":
                           dropout=dropout,
                           num_tokens=num_tokens,
                           num_embeddings=num_embeddings)
+    if args.model != "LSTM" and args.model != "GRU":
+        print("--model must be GRU / LSTM. Did not recognise anyone of them. Using LSTM as default.")
     print(model)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")

@@ -21,6 +21,7 @@ For training a model:
 python main.py --model "model" --model-name "model-name" --data "path to data folder" dropout "dropout" --epochs "epochs" lr "lr"
 ```
 The model type given in the --model flag (LSTM / GRU) will be saved to ./models/model_name which will be created automatically.
+All the data related to the training process of the model will be saved there.
 
 Example for training a LSTM model with a dropout value of 0.2:
 ```bash

@@ -1,6 +1,5 @@
 import os
 import torch
-from torch.utils.data import Dataset
 from torch.autograd import Variable
 
 
@@ -23,13 +22,14 @@ class Dictionary(object):
 
 class DataLoader(object):
     """Corpus Tokenizer"""
-    def __init__(self, data_path, batch_size, sequence_length):
-        self.batch_size = batch_size
+    def __init__(self, data_path, train_batch_size, eval_batch_size, sequence_length):
+        self.train_batch_size = train_batch_size
+        self.eval_batch_size = eval_batch_size
         self.sequence_length = sequence_length
         self.dictionary = Dictionary()
-        self.train = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.train.txt')))
-        self.valid = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.valid.txt')))
-        self.test = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.test.txt')))
+        self.train = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.train.txt')), self.train_batch_size)
+        self.valid = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.valid.txt')), self.eval_batch_size)
+        self.test = self.batchify(self.tokenize(os.path.join(data_path, 'ptb.test.txt')), self.eval_batch_size)
 
     def tokenize(self, path):
         """Tokenizes a text file."""
@@ -56,22 +56,26 @@ class DataLoader(object):
 
         return ids
 
-    def batchify(self, data):
-        number_of_batches = data.size(0) // self.batch_size
-        data = data.narrow(0, 0, number_of_batches * self.batch_size)
-        data = data.view(self.batch_size, -1).t().contiguous()
+    def batchify(self, data, batch_size):
+        number_of_batches = data.size(0) // batch_size
+        data = data.narrow(0, 0, number_of_batches * batch_size)
+        data = data.view(batch_size, -1).t().contiguous()
         return data
 
-    def get_batch(self, source, i, evaluation=False):
+    def get_batch(self, source, i):
         seq_len = min(self.sequence_length, len(source) - 1 - i)
-        data = Variable(source[i:i + seq_len], volatile=evaluation)
+        data = Variable(source[i:i + seq_len])
         target = Variable(source[i + 1:i + 1 + seq_len].view(-1))
         return data, target
 
 
 if __name__ == "__main__":
     data_path = "./data"
-    batch_size = 20
+    train_batch_size = 20
+    eval_batch_size = 20
+    sequence_length = 35
     dataset = DataLoader(data_path=data_path,
-                         batch_size=batch_size)
+                         train_batch_size=train_batch_size,
+                         eval_batch_size=eval_batch_size,
+                         sequence_length=sequence_length)
 

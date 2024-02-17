@@ -19,20 +19,24 @@ class LSTM_Model(nn.Module):
         output, hidden = self.lstm(x, hidden)
         output = self.drop(output)
         decoded_output = self.decoder(output.view((output.size(0) * output.size(1), output.size(2))))
-        decoded_output = decoded_output.view((output.size(0), output.size(1), decoded_output.size(1)))
         return decoded_output, hidden
 
-    def init_hidden(self, batch_size):
+    def init_hidden(self, batch_size, device):
         h = torch.zeros(self.num_layers, batch_size, self.hidden_size)
         c = torch.zeros(self.num_layers, batch_size, self.hidden_size)
-        return h, c
+        return h.to(device), c.to(device)
 
     def init_model(self):
-        for name, param in self.lstm.named_parameters():
-            if "weight" in name:
-                nn.init.uniform_(param.data, a=-0.1, b=0.1)
-            elif "bias" in name:
-                nn.init.constant_(param.data, 0.0)
+        self.encoder.weight.data.uniform_(-0.1, 0.1)
+        self.decoder.bias.data.fill_(0)
+        self.decoder.weight.data.uniform_(-0.1, 0.1)
+
+    def detach_hidden(self, hidden, device):
+        h, c = hidden
+        h = h.detach().to(device)
+        c = c.detach().to(device)
+        hidden = (h, c)
+        return hidden
 
 
 class GRU_Model(nn.Module):
@@ -45,25 +49,34 @@ class GRU_Model(nn.Module):
         self.encoder = nn.Embedding(num_tokens, num_embeddings)
         self.gru = nn.GRU(input_size=num_embeddings, hidden_size=hidden_size, num_layers=num_layers, dropout=dropout)
         self.decoder = nn.Linear(hidden_size, num_tokens)
+        self.init_model()
 
     def forward(self, x, hidden):
         x = self.drop(self.encoder(x))
         output, hidden = self.gru(x, hidden)
         output = self.drop(output)
         decoded_output = self.decoder(output.view(output.size(0) * output.size(1), output.size(2)))
-        decoded_output = decoded_output.view((output.size(0), output.size(1), decoded_output.size(1)))
         return decoded_output, hidden
 
-    def init_hidden(self, batch_size):
+    def init_hidden(self, batch_size, device):
         h = torch.zeros(self.num_layers, batch_size, self.hidden_size)
-        return h
+        return h.to(device)
+
+    def init_model(self):
+        self.encoder.weight.data.uniform_(-0.1, 0.1)
+        self.decoder.bias.data.fill_(0)
+        self.decoder.weight.data.uniform_(-0.1, 0.1)
+
+    def detach_hidden(self, hidden, device):
+        hidden = hidden.detach().to(device)
+        return hidden
 
 
 if __name__ == "__main__":
     input_size = 1
     hidden_size = 200
     num_layers = 2
-    dropout = 0.5
+    dropout = 0.2
     batch_size = 20
     num_tokens = 10000
     num_embeddings = 256
@@ -73,8 +86,7 @@ if __name__ == "__main__":
                             num_layers=num_layers,
                             dropout=dropout,
                             num_tokens=num_tokens,
-                            num_embeddings=num_embeddings
-                            )
+                            num_embeddings=num_embeddings)
 
     gru_model = GRU_Model(hidden_size=hidden_size,
                           num_layers=num_layers,

@@ -20,27 +20,41 @@ parser.add_argument(
     "--model-name",
     type=str,
     help="Name of the model in which the model will be saved.",
-    default="LSTM_Dropout"
+    default="LSTM_Dropout_02"
+)
+
+parser.add_argument(
+    "--dropout",
+    type=int,
+    help="Dropout value which will be used.",
+    default=0.2
 )
 
 parser.add_argument(
     "--epochs",
-    type=str,
+    type=int,
     help="Number of training epochs.",
     default=40
 )
 
 parser.add_argument(
     "--lr",
-    type=str,
+    type=int,
     help="Initial learning rate for training.",
     default=20
+)
+
+parser.add_argument(
+    "--test",
+    type=bool,
+    help="If true, loads the model according to the given flags of --model-name, --model and tests the model. ",
+    default=True
 )
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    dropout = 0
+    dropout = args.dropout
     input_size = 1
     hidden_size = 200
     num_layers = 2
@@ -54,7 +68,9 @@ if __name__ == "__main__":
     lr = args.lr
     model_name = args.model_name
     data_path = "./data"
+    test_mode = args.test
 
+    print(f"Building {args.model} Model...")
     model = LSTM_Model(hidden_size=hidden_size,
                        num_layers=num_layers,
                        dropout=dropout,
@@ -66,8 +82,10 @@ if __name__ == "__main__":
                           dropout=dropout,
                           num_tokens=num_tokens,
                           num_embeddings=num_embeddings)
+    print(model)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    print(f"Running on {device}")
 
     handler = Handler(model=model,
                       model_name=model_name,
@@ -80,3 +98,9 @@ if __name__ == "__main__":
                       lr=lr,
                       dropout=dropout,
                       device=device)
+
+    if not test_mode:
+        handler.run()
+    else:
+        handler.load_model()
+        handler.test()

@@ -1,9 +1,7 @@
 import time
-
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from DataSet import DataLoader
 from model import LSTM_Model, GRU_Model
 import numpy as np
@@ -44,7 +42,7 @@ class Handler:
         avg_perplexity = 0
         print_every = 200
 
-        hidden = self.model.init_hidden(self.train_batch_size, device)
+        hidden = self.model.init_hidden(self.train_batch_size, self.device)
         for batch_idx, i in enumerate(range(0, train_dataloader.size(0) - 1, self.sequence_length)):
             data, target = self.dataloader.get_batch(train_dataloader, i)
 
@@ -73,15 +71,15 @@ class Handler:
 
         return avg_loss, avg_perplexity
 
-    def evaluate_model(self, dataloader, epoch, data_type):
+    def evaluate_model(self, dataloader, data_type):
         self.model.eval()
 
         total_loss = 0
         avg_loss = 0
         if data_type == "Train":
-            hidden = self.model.init_hidden(self.train_batch_size, device)
+            hidden = self.model.init_hidden(self.train_batch_size, self.device)
         else:
-            hidden = self.model.init_hidden(self.eval_batch_size, device)
+            hidden = self.model.init_hidden(self.eval_batch_size, self.device)
         for batch_idx, i in enumerate(range(0, dataloader.size(0) - 1, self.sequence_length)):
             with torch.no_grad():
                 data, target = self.dataloader.get_batch(dataloader, i)
@@ -147,7 +145,7 @@ class Handler:
         validation_file.close()
 
     def run(self):
-        print(f'Start Running {self.model_name}')
+        print(f"Start Training {self.model_name}.")
         if not os.path.exists(os.path.join(os.getcwd(), "saved_models")):
             os.mkdir(os.path.join(os.getcwd(), "saved_models"))
         if not os.path.exists(os.path.join(os.getcwd(), "saved_models", self.model_name)):
@@ -165,9 +163,9 @@ class Handler:
             print("-" * 80)
             self.train_one_epoch(epoch)
 
-            train_avg_loss, train_avg_perplexity = self.evaluate_model(self.dataloader.train, epoch, "Train")
-            validation_avg_loss, validation_avg_perplexity = self.evaluate_model(self.dataloader.valid, epoch, "Validation")
-            test_avg_loss, test_avg_perplexity = self.evaluate_model(self.dataloader.test, epoch, "Test")
+            train_avg_loss, train_avg_perplexity = self.evaluate_model(self.dataloader.train, "Train")
+            validation_avg_loss, validation_avg_perplexity = self.evaluate_model(self.dataloader.valid, "Validation")
+            test_avg_loss, test_avg_perplexity = self.evaluate_model(self.dataloader.test, "Test")
             print("-" * 80)
             end = time.time()
             print(f"| End of epoch {epoch + 1} | Epoch RunTime {(end - start):.2f}s | Train ppl "
@@ -190,6 +188,25 @@ class Handler:
 
         self.save_data(train_perplexity, validation_perplexity, test_perplexity)
 
+    def load_model(self):
+        print(f"Loading Model {self.model_name}.")
+        model_path = os.path.join(os.getcwd(), "saved_models", self.model_name, f"{self.model_name}.pt")
+        assert os.path.exists(model_path)
+
+        checkpoint = torch.load(model_path)
+        self.model.load_state_dict(checkpoint["model"])
+        print("Loaded Model Successfully.")
+
+    def test(self):
+        print(f"Start Testing {self.model_name}.")
+        train_avg_loss, train_avg_perplexity = self.evaluate_model(self.dataloader.train, "Train")
+        validation_avg_loss, validation_avg_perplexity = self.evaluate_model(self.dataloader.valid, "Validation")
+        test_avg_loss, test_avg_perplexity = self.evaluate_model(self.dataloader.test, "Test")
+
+        print(f"\nTrain Average Perplexity {train_avg_perplexity:.2f}.")
+        print(f"Validation Average Perplexity {validation_avg_perplexity:.2f}.")
+        print(f"Test Average Perplexity {test_avg_perplexity:.2f}.")
+
 
 if __name__ == "__main__":
     dropout = 0
@@ -207,20 +224,15 @@ if __name__ == "__main__":
     model_name = "LSTM_Dropout_0"
     data_path = "./data"
 
-    lstm_model = LSTM_Model(hidden_size=hidden_size,
-                            num_layers=num_layers,
-                            dropout=dropout,
-                            num_tokens=num_tokens,
-                            num_embeddings=num_embeddings)
-    # gru_model = GRU_Model(hidden_size=hidden_size,
-    #                       num_layers=num_layers,
-    #                       dropout=dropout,
-    #                       num_tokens=num_tokens,
-    #                       num_embeddings=num_embeddings)
+    model = LSTM_Model(hidden_size=hidden_size,
+                       num_layers=num_layers,
+                       dropout=dropout,
+                       num_tokens=num_tokens,
+                       num_embeddings=num_embeddings)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-    handler = Handler(model=lstm_model,
+    handler = Handler(model=model,
                       model_name=model_name,
                       data_path=data_path,
                       train_batch_size=train_batch_size,

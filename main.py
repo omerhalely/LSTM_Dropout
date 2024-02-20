@@ -32,7 +32,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--dropout",
-    type=int,
+    type=float,
     help="Dropout value which will be used.",
     default=0.2
 )

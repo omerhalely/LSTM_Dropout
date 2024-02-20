@@ -49,7 +49,7 @@ class Handler:
             data = data.to(self.device)
             target = target.to(self.device)
 
-            hidden = self.model.detach_hidden(hidden, device)
+            hidden = self.model.detach_hidden(hidden, self.device)
 
             self.model.zero_grad()
 

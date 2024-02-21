@@ -99,7 +99,7 @@ class Handler:
     def save_data(self, average_train_perplexity, average_validation_perplexity, average_test_perplexity):
         plt.plot(average_train_perplexity, label="Train Perplexity")
         plt.plot(average_test_perplexity, label="Test Perplexity")
-        plt.title(f"{self.model_name}: lr {self.lr:.4f} Dropout {self.dropout}")
+        plt.title(f"{self.model_name}: Dropout {self.dropout}")
         plt.xlabel("Epoch")
         plt.ylabel("Perplexity")
         plt.legend(loc="upper right")
@@ -193,7 +193,7 @@ class Handler:
         model_path = os.path.join(os.getcwd(), "saved_models", self.model_name, f"{self.model_name}.pt")
         assert os.path.exists(model_path)
 
-        checkpoint = torch.load(model_path)
+        checkpoint = torch.load(model_path, map_location=self.device)
         self.model.load_state_dict(checkpoint["model"])
         print("Loaded Model Successfully.")
 
